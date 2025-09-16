@@ -1,0 +1,13 @@
+---
+- hosts: homelab
+  gather_facts: false
+  become: yes
+  # 多 PVE 建议串行，避免跨宿主重复操作同一 VM
+  # serial: 1
+  roles:
+    - role: proxmox_qm_rollback
+      vars:
+        vm_start: 1001
+        vm_end: 1006
+        snapshot_name: "vm_initialized"
+        shutdown_timeout: 60

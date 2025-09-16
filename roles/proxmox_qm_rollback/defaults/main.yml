@@ -1,0 +1,12 @@
+---
+# 通用
+snapshot_name: "k8s_initialized"
+shutdown_timeout: 60
+
+# 单机模式
+vmid: ""
+
+# 批量模式：可直接给 vm_ids，或通过 vm_start/vm_end 生成
+vm_ids: []
+vm_start: ""
+vm_end: ""

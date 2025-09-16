@@ -1,0 +1,7 @@
+---
+# 按家族映射包名
+nfs_client_pkg_map:
+  Debian: nfs-common
+  RedHat: nfs-utils
+  Suse: nfs-client
+  Archlinux: nfs-utils

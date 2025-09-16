@@ -1,0 +1,9 @@
+- hosts: homelab
+  gather_facts: false
+  become: yes
+  tasks:
+    - name: Shutdown now
+      command: /sbin/shutdown -h now
+      async: 1
+      poll: 0
+      ignore_errors: true   # 连接会被切断，避免标红

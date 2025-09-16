@@ -1,0 +1,20 @@
+---
+# 先确保 qm 存在（必须在 PVE 上执行）
+- name: Check qm exists on host
+  shell: "command -v qm"
+  register: qm_check
+  changed_when: false
+  failed_when: qm_check.rc != 0
+
+# 自动选择执行路径：优先单机，其次批量
+- name: Run single-VM rollback path
+  include_tasks: single.yml
+  when: vmid | string | length > 0
+
+- name: Run range/list rollback path
+  include_tasks: range.yml
+  when: (vmid | string | length == 0) and
+        (
+          (vm_ids | length > 0) or
+          ((vm_start | string | length > 0) and (vm_end | string | length > 0))
+        )

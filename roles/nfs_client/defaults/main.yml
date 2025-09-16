@@ -1,0 +1,4 @@
+---
+nfs_client_state: present
+nfs_update_cache: true
+nfs_cache_valid_seconds: 3600

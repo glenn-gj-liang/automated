@@ -1,0 +1,68 @@
+---
+- name: Build VM id list when needed
+  set_fact:
+    vm_ids: "{{ query('sequence', 'start=' ~ vm_start ~ ' end=' ~ vm_end ~ ' stride=1')
+                | map('int') | list }}"
+  when:
+    - vm_ids | length == 0
+    - (vm_start | string | length > 0) and (vm_end | string | length > 0)
+
+# 1) 并发触发优雅关机（不阻塞）
+- name: Trigger graceful shutdown concurrently
+  shell: "qm shutdown {{ item }} --timeout {{ shutdown_timeout }}"
+  loop: "{{ vm_ids }}"
+  async: "{{ shutdown_timeout + 30 }}"
+  poll: 0
+  register: shutdown_jobs
+
+# 2) 等待全部停止；若仍运行，后面会强制
+- name: Wait until VMs are stopped
+  shell: "qm status {{ item }} | awk '{print $2}'"
+  loop: "{{ vm_ids }}"
+  register: wait_states
+  changed_when: false
+  retries: "{{ shutdown_timeout }}"
+  delay: 1
+  until: wait_states.stdout == "stopped"
+
+# 3) 仍在运行就强制关机
+- name: Force stop if still running
+  shell: |
+    state=$(qm status {{ item }} | awk '{print $2}')
+    [ "$state" = "stopped" ] || qm stop {{ item }}
+  loop: "{{ vm_ids }}"
+  changed_when: true
+
+# 4) 检查快照，缺失则跳过
+- name: Build list of VMs with snapshot
+  shell: "qm listsnapshot {{ item }} | awk '{print $2}' | grep -Fx {{ snapshot_name | quote }}"
+  loop: "{{ vm_ids }}"
+  register: snap_checks
+  changed_when: false
+  failed_when: false
+
+- name: VMs to rollback
+  set_fact:
+    vms_with_snap: "{{ snap_checks.results
+                      | selectattr('rc','equalto',0)
+                      | map(attribute='item') | list }}"
+    vms_missing_snap: "{{ snap_checks.results
+                         | rejectattr('rc','equalto',0)
+                         | map(attribute='item') | list }}"
+
+- name: Log missing snapshots
+  debug:
+    msg: "skip vm {{ item }}: snapshot '{{ snapshot_name }}' not found"
+  loop: "{{ vms_missing_snap }}"
+  when: vms_missing_snap | length > 0
+
+# 5) 顺序回滚与启动（避免存储压力）
+- name: Rollback to snapshot sequentially
+  shell: "qm rollback {{ item }} {{ snapshot_name }}"
+  loop: "{{ vms_with_snap }}"
+  changed_when: true
+
+- name: Start VMs sequentially
+  shell: "qm start {{ item }}"
+  loop: "{{ vms_with_snap }}"
+  changed_when: true

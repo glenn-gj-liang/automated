@@ -1,0 +1,12 @@
+---
+- import_playbook: ../submodules/kubespray/cluster.yml
+
+- hosts: k8s_cluster
+  gather_facts: true
+  become: yes
+  tasks:
+    - include_role:
+        name: nfs_client
+        apply:
+          tags: [nfs]
+      tags: [nfs]

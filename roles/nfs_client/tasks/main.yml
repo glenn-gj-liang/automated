@@ -1,0 +1,33 @@
+---
+- name: Resolve NFS client package name
+  set_fact:
+    nfs_client_pkg: "{{ nfs_client_pkg_map.get(ansible_os_family, 'nfs-utils') }}"
+
+# 可选：更新缓存，按家族分别处理
+- name: Update apt cache
+  apt:
+    update_cache: true
+    cache_valid_time: "{{ nfs_cache_valid_seconds }}"
+  when:
+    - nfs_update_cache
+    - ansible_os_family == 'Debian'
+
+- name: Update yum/dnf cache
+  yum:
+    update_cache: true
+  when:
+    - nfs_update_cache
+    - ansible_os_family == 'RedHat'
+
+- name: Refresh zypper cache
+  zypper:
+    name: zypper
+    update_cache: true
+  when:
+    - nfs_update_cache
+    - ansible_os_family == 'Suse'
+
+- name: Install NFS client
+  package:
+    name: "{{ nfs_client_pkg }}"
+    state: "{{ nfs_client_state }}"

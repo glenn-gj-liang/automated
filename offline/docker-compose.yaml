@@ -1,0 +1,132 @@
+services:
+  nginx:
+    image: nginx:1.29
+    container_name: docker-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${FILES_PATH}:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./tls:/etc/nginx/tls:ro
+    restart: unless-stopped
+    networks: [registry-net]
+
+  ## UI (内网端口即可)
+  registry-ui:
+    image: dqzboy/docker-registry-ui:latest
+    container_name: registry-ui
+    environment:
+      - DOCKER_REGISTRY_URL=http://reg-docker-hub:5000
+      - SECRET_KEY_BASE=9f18244a1e1179fa5aa4a06a335d01b2
+      - ENABLE_DELETE_IMAGES=true
+      - NO_SSL_VERIFICATION=true
+    restart: always
+    # 不再映射到宿主
+    # ports: ["50000:8080"]
+    networks: [registry-net]
+
+  ## docker hub
+  dockerhub:
+    image: dqzboy/registry:latest
+    container_name: reg-docker-hub
+    restart: always
+    environment:
+      - OTEL_TRACES_EXPORTER=none
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - ./registry-hub.yml:/etc/distribution/config.yml
+    # 不再暴露 51000
+    # ports: ["51000:5000"]
+    networks: [registry-net]
+
+  ghcr:
+    image: dqzboy/registry:latest
+    container_name: reg-ghcr
+    restart: always
+    environment:
+      - OTEL_TRACES_EXPORTER=none
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - ./registry-ghcr.yml:/etc/distribution/config.yml
+    networks: [registry-net]
+
+  gcr:
+    image: dqzboy/registry:latest
+    container_name: reg-gcr
+    restart: always
+    environment:
+      - OTEL_TRACES_EXPORTER=none
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - ./registry-gcr.yml:/etc/distribution/config.yml
+    networks: [registry-net]
+
+  k8sgcr:
+    image: dqzboy/registry:latest
+    container_name: reg-k8s-gcr
+    restart: always
+    environment:
+      - OTEL_TRACES_EXPORTER=none
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - ./registry-k8sgcr.yml:/etc/distribution/config.yml
+    networks: [registry-net]
+
+  k8s:
+    image: dqzboy/registry:latest
+    container_name: reg-k8s
+    restart: always
+    environment:
+      - OTEL_TRACES_EXPORTER=none
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - ./registry-k8s.yml:/etc/distribution/config.yml
+    networks: [registry-net]
+
+  quay:
+    image: dqzboy/registry:latest
+    container_name: reg-quay
+    restart: always
+    environment:
+      - OTEL_TRACES_EXPORTER=none
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - ./registry-quay.yml:/etc/distribution/config.yml
+    networks: [registry-net]
+
+  mcr:
+    image: dqzboy/registry:latest
+    container_name: reg-mcr
+    restart: always
+    environment:
+      - OTEL_TRACES_EXPORTER=none
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - ./registry-mcr.yml:/etc/distribution/config.yml
+    networks: [registry-net]
+
+  elastic:
+    image: dqzboy/registry:latest
+    container_name: reg-elastic
+    restart: always
+    environment:
+      - OTEL_TRACES_EXPORTER=none
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - ./registry-elastic.yml:/etc/distribution/config.yml
+    networks: [registry-net]
+
+  nvcr:
+    image: dqzboy/registry:latest
+    container_name: reg-nvcr
+    restart: always
+    environment:
+      - OTEL_TRACES_EXPORTER=none
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - ./registry-nvcr.yml:/etc/distribution/config.yml
+    networks: [registry-net]
+
+networks:
+  registry-net:

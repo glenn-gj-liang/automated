@@ -1,0 +1,61 @@
+---
+- name: Check VM exists
+  shell: "qm status {{ vmid }} >/dev/null 2>&1"
+  register: chk_exists
+  changed_when: false
+  failed_when: false
+
+- name: Skip if VM not found
+  when: chk_exists.rc != 0
+  debug:
+    msg: "skip vm {{ vmid }}: not found"
+
+- block:
+    - name: Get VM state
+      shell: "qm status {{ vmid }} | awk '{print $2}'"
+      register: vm_state
+      changed_when: false
+
+    - name: Check snapshot exists (awk $2 + grep -Fx)
+      shell: "qm listsnapshot {{ vmid }} | awk '{print $2}' | grep -Fx {{ snapshot_name | quote }}"
+      register: snap_check
+      changed_when: false
+      failed_when: false
+
+    - name: Skip if snapshot missing
+      when: snap_check.rc != 0
+      debug:
+        msg: "skip vm {{ vmid }}: snapshot '{{ snapshot_name }}' not found"
+
+    - name: Graceful shutdown if running
+      when: vm_state.stdout == "running" and snap_check.rc == 0
+      shell: "qm shutdown {{ vmid }} --timeout {{ shutdown_timeout }}"
+      register: shutdown_try
+      changed_when: true
+      failed_when: false
+
+    - name: Wait for stopped
+      when: vm_state.stdout == "running" and snap_check.rc == 0
+      shell: "qm status {{ vmid }} | awk '{print $2}'"
+      register: wait_state
+      changed_when: false
+      failed_when: false
+      retries: "{{ shutdown_timeout }}"
+      delay: 1
+      until: wait_state.stdout == "stopped"
+
+    - name: Force stop if still running
+      when: snap_check.rc == 0 and (wait_state.stdout is defined) and wait_state.stdout != "stopped"
+      shell: "qm stop {{ vmid }}"
+      changed_when: true
+
+    - name: Rollback to snapshot
+      when: snap_check.rc == 0
+      shell: "qm rollback {{ vmid }} {{ snapshot_name }}"
+      changed_when: true
+
+    - name: Start VM
+      when: snap_check.rc == 0
+      shell: "qm start {{ vmid }}"
+      changed_when: true
+  when: chk_exists.rc == 0
