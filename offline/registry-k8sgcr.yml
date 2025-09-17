@@ -40,7 +40,7 @@ health:
     threshold: 3
 
 proxy:
-  remoteurl: https://k8s.gcr.io
+  remoteurl: https://registry.k8s.io
   username: 
   password:
   ttl: 168h
