@@ -147,7 +147,7 @@ cert_manager_enabled: true
 metallb_enabled: true
 metallb_speaker_enabled: "{{ metallb_enabled }}"
 metallb_namespace: "metallb-system"
-metallb_protocol: "layer2"
+# metallb_protocol: "layer2"
 # metallb_port: "7472"
 # metallb_memberlist_port: "7946"
 metallb_config:
@@ -170,9 +170,9 @@ metallb_config:
   address_pools:
     primary:
       ip_range:
-        - 192.168.1.240-192.168.1.249
+        - 192.168.1.90-192.168.1.99
       auto_assign: true
-    # pool1:
+#     pool1:
 #       ip_range:
 #         - 10.6.0.0/16
 #       auto_assign: true
