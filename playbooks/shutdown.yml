@@ -1,4 +1,4 @@
-- hosts: homelab
+- hosts: all
   gather_facts: false
   become: yes
   tasks:
