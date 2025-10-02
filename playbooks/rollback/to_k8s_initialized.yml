@@ -1,5 +1,5 @@
 ---
-- hosts: homelab
+- hosts: all
   gather_facts: false
   become: yes
   # 多 PVE 建议串行，避免跨宿主重复操作同一 VM

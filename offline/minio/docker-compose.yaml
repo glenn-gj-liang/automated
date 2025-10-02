@@ -1,0 +1,16 @@
+services:
+  minio:
+    image: quay.databi.cc/minio/minio:latest
+    container_name: minio
+    restart: always
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: Y5KZ0D8avch9WR
+    command: server /data --console-address ":9001"
+    volumes:
+      - /minio:/data
+# 42c9e430ad19d5ff
+# be3da04b93e784eaad75607d29ca6d1a
